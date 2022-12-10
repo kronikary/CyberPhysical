@@ -1,0 +1,143 @@
+<!DOCTYPE HTML><html>
+<!-- Rui Santos - Complete project details at https://RandomNerdTutorials.com
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software. -->
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="highcharts.js"></script>
+  <style>
+    body {
+      min-width: 310px;
+    	max-width: 800px;
+    	height: 400px;
+      margin: 0 auto;
+    }
+
+  </style>
+
+</head>
+
+
+<body>
+  <h2>Air Quality Monitor</h2>
+  <div id="chart-temperature" class="container"></div>
+  <div id="chart-humidity" class="container"></div>
+  <div id="chart-co2" class="container"></div>
+</body>
+
+
+<script>
+
+// Get current sensor readings when the page loads
+window.addEventListener('load', getReadings);
+
+var chartT = new Highcharts.Chart({
+  chart:{
+    renderTo:'chart-temperature'
+  },
+  series: [
+    {
+      name: 'Temperature',
+      type: 'line',
+      color: '#101D42',
+      marker: {
+        symbol: 'circle',
+        radius: 3,
+        fillColor: '#101D42',
+      }
+    },
+
+
+  ],
+  title: {
+    text: undefined
+  },
+  xAxis: {
+    title: {
+      text: 'Time'
+    },
+    type: 'datetime',
+    dateTimeLabelFormats: { second: '%H:%M:%S' }
+  },
+  yAxis: {
+    title: {
+      text: 'Temperature Celsius Degrees'
+    }
+  },
+  credits: {
+    enabled: false
+  }
+});
+
+function plotReadings(jsonValue) {
+
+  var keys = Object.keys(jsonValue);
+  console.log(jsonValue.temperature);
+  console.log(jsonValue.temperature.length);
+  
+  //PLOT TEMPERATURE
+  for (var i = 0; i < jsonValue.temperature.length; i++)
+  {
+    var x = (new Date()).getTime();
+    var y = Number(jsonValue.temperature[i]);
+        if(chartT.series[i].data.length > 40) {
+      chartT.series[i].addPoint([x, y], true, true, true);
+    } else 
+	{
+      chartT.series[i].addPoint([x, y], true, false, true);
+    }
+  }
+
+  //PLOT HUMIDITY
+  
+  //PLOT CO2
+  
+}
+
+
+// Function to get current readings on the webpage when it loads for the first time
+function getReadings(){
+  var xhr = new XMLHttpRequest();
+  xhr.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      var myObj = JSON.parse(this.responseText);	
+      console.log(myObj);
+      plotReadings(myObj);
+    }
+  };
+  xhr.open("GET", "/readings", true);
+  xhr.send();
+
+}
+
+
+if (!!window.EventSource) {
+    var source = new EventSource('/events');
+
+    source.addEventListener('open', function(e) {
+    console.log("Events Connected");
+  }, false);
+
+  source.addEventListener('error', function(e) {
+      if (e.target.readyState != EventSource.OPEN) {
+      console.log("Events Disconnected");
+    }
+  }, false);
+
+  source.addEventListener('message', function(e) {
+   console.log("message", e.data);
+  }, false);
+
+  source.addEventListener('new_readings', function(e) {
+    console.log("new_temp_readings", e.data);
+    var myObj = JSON.parse(e.data);
+    console.log(myObj);
+    plotReadings(myObj);
+  }, false);
+}
+
+</script>
+</html>
